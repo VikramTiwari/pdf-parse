@@ -15,7 +15,15 @@ source venv/bin/activate  # On Windows, use: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-3. Run the server:
+3. Set up Gemini API key:
+   - Get your API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
+   - Create a `.env` file in the project root directory
+   - Add your API key to the `.env` file:
+     ```
+     GEMINI_API_KEY=your_api_key_here
+     ```
+
+4. Run the server:
 ```bash
 uvicorn main:app --reload
 ```
