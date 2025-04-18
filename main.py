@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from pypdf import PdfReader
 import io
 from typing import List
+from extractors import extract_emails, extract_links, extract_tables
 
 app = FastAPI(title="PDF Parser API")
 
@@ -20,9 +21,20 @@ async def parse_pdf(file: UploadFile = File(...)):
         for page_num in range(len(pdf_reader.pages)):
             page = pdf_reader.pages[page_num]
             text = page.extract_text()
+            
+            # Extract metadata using the page object
+            emails = extract_emails(page)
+            links = extract_links(page)
+            tables = extract_tables(page)
+            
             pages_data.append({
                 "page_number": page_num + 1,
-                "content": text
+                "content": text,
+                "metadata": {
+                    "emails": emails,
+                    "links": links,
+                    "tables": tables
+                }
             })
         
         return JSONResponse(content={
