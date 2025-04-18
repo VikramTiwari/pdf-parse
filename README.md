@@ -33,6 +33,24 @@ Example using curl:
 curl -X POST "http://localhost:8000/parse-pdf/" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@your_file.pdf"
 ```
 
+### Upload and Parse PDF with Gemini
+
+Send a POST request to `/parse-pdf-gemini/` with a PDF file and optional page range in the request body.
+
+Example using curl to parse all pages:
+```bash
+curl -X POST "http://localhost:8000/parse-pdf-gemini/" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@your_file.pdf" -F "page_range=all"
+```
+
+Example using curl to parse specific pages (e.g., pages 1-3):
+```bash
+curl -X POST "http://localhost:8000/parse-pdf-gemini/" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@your_file.pdf" -F "page_range=1-3"
+```
+
+The `page_range` parameter accepts:
+- "all" to process all pages (default)
+- "start-end" format (e.g., "1-3") to process a specific range of pages
+
 ### Response Format
 
 The API returns a JSON response with the following structure:
@@ -40,14 +58,19 @@ The API returns a JSON response with the following structure:
 {
     "filename": "your_file.pdf",
     "total_pages": 3,
+    "processed_pages": 2,  // Only present in /parse-pdf-gemini/ response
     "pages": [
         {
             "page_number": 1,
-            "content": "Text content from page 1"
-        },
-        {
-            "page_number": 2,
-            "content": "Text content from page 2"
+            "content": "Text content from page 1",
+            "emails": ["email1@example.com"],
+            "links": ["https://example.com"],
+            "tables": [
+                {
+                    "header": ["Column 1", "Column 2"],
+                    "content": [["Data 1", "Data 2"], ["Data 3", "Data 4"]]
+                }
+            ]
         },
         // ... more pages
     ]

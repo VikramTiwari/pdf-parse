@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Query
 from fastapi.responses import JSONResponse
 from pypdf import PdfReader
 import io
@@ -51,20 +51,38 @@ async def parse_pdf(file: UploadFile = File(...)):
         )
 
 @app.post("/parse-pdf-gemini/")
-async def parse_pdf_gemini(file: UploadFile = File(...)):
+async def parse_pdf_gemini(
+    file: UploadFile = File(...),
+    page_range: str = Query("all", description="Page range to parse (e.g., '1-3' or 'all')")
+):
     try:
         # Read the uploaded file
         contents = await file.read()
 
         # Create a PDF reader object
         pdf_reader = PdfReader(io.BytesIO(contents))
+        total_pages = len(pdf_reader.pages)
 
-        # Extract information from each page using Gemini
+        # Determine which pages to process
+        pages_to_process = []
+        if page_range.lower() == "all":
+            pages_to_process = range(total_pages)
+        else:
+            try:
+                start, end = map(int, page_range.split("-"))
+                # Convert to 0-based indexing and ensure within bounds
+                start = max(0, start - 1)
+                end = min(total_pages, end)
+                pages_to_process = range(start, end)
+            except ValueError:
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": "Invalid page range format. Use 'all' or 'start-end' (e.g., '1-3')"}
+                )
+
+        # Extract information from specified pages using Gemini
         pages_data = []
-        count = 0
-        for page_num in range(len(pdf_reader.pages)):
-            if count > 1: break
-            count += 1
+        for page_num in pages_to_process:
             page = pdf_reader.pages[page_num]
 
             # Extract information using Gemini
@@ -78,7 +96,8 @@ async def parse_pdf_gemini(file: UploadFile = File(...)):
 
         return JSONResponse(content={
             "filename": file.filename,
-            "total_pages": len(pdf_reader.pages),
+            "total_pages": total_pages,
+            "processed_pages": len(pages_data),
             "pages": pages_data
         })
 
